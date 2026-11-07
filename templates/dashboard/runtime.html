@@ -1,0 +1,44 @@
+    <section class="grid">
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h2>Google Flow</h2>
+            <p class="muted">Trạng thái cấu hình tự động hóa Flow</p>
+          </div>
+          <span class="pill {{ 'ok' if flow.configured else 'warn' }}">
+            {{ 'Đủ cấu hình' if flow.configured else 'Cần cấu hình' }}
+          </span>
+        </div>
+        <p>Project URL: <span class="{{ 'ok' if flow.project_configured else 'warn' }}">{{ 'Đã cấu hình' if flow.project_configured else 'Chưa cấu hình URL HTTPS' }}</span></p>
+        <p>Phiên đăng nhập: <span class="{{ 'ok' if flow.auth_exists else 'warn' }}">{{ 'Có file auth.json' if flow.auth_exists else 'Chưa có auth.json' }}</span></p>
+        {% if flow.auth_exists %}<p class="muted">File: <code>{{ flow.auth_path }}</code>{% if flow.auth_modified %} · Cập nhật {{ flow.auth_modified }}{% endif %}</p>{% endif %}
+        <p class="muted">{{ flow.auth_note }}</p>
+        <p>Selectors còn thiếu: {% if flow.missing_selectors %}<span class="warn">{{ flow.missing_selectors|join(', ') }}</span>{% else %}<span class="ok">Đủ</span>{% endif %}</p>
+        <small>{{ flow.note }}</small>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <div><h2>Workflow</h2><p class="muted">Điều khiển tiến trình được khởi chạy từ dashboard</p></div>
+          <span class="pill {{ 'ok' if process.running else 'muted' }}">{{ 'Đang chạy' if process.running else 'Đã dừng' }}</span>
+        </div>
+        {% if process.running %}
+          <p>Chế độ: <code>--{{ process.mode }}</code> · PID {{ process.pid }}</p>
+          <p class="muted">Bắt đầu {{ process.started }}</p>
+          <form method="post" action="{{ url_for('stop_process') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="danger" type="submit">Dừng workflow</button>
+          </form>
+        {% else %}
+          {% if process.last_exit_code is not none %}<p class="muted">Tiến trình trước kết thúc với mã {{ process.last_exit_code }}.</p>{% endif %}
+          <div class="actions">
+            {% for mode, label in [('auto','Chạy tự động'), ('generate-ideas','Tạo ý tưởng'), ('process-queue','Xử lý hàng đợi'), ('telegram-poll','Chỉ nghe Telegram')] %}
+              <form method="post" action="{{ url_for('start_process', mode=mode) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button class="{{ 'secondary' if mode != 'auto' else '' }}" type="submit">{{ label }}</button>
+              </form>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </article>
+    </section>

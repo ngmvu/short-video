@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>Short Video Distributor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+  <script src="{{ url_for('static', filename='dashboard.js') }}" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#workflow">
+        <span class="brand-mark">SV</span>
+        <span><strong>Video Studio</strong><small>Distributor</small></span>
+      </a>
+      <nav class="sidebar-nav" aria-label="Điều hướng dashboard">
+        <span class="nav-label">Không gian làm việc</span>
+        <a class="nav-link active" href="#workflow" data-dashboard-nav="workflow"><span>◈</span> Workflow</a>
+        <a class="nav-link" href="#runtime" data-dashboard-nav="runtime"><span>◉</span> Vận hành</a>
+
+        <span class="nav-label">Nội dung</span>
+        <a class="nav-link" href="#content" data-dashboard-nav="content"><span>✦</span> Ý tưởng & duyệt</a>
+        <a class="nav-link" href="#videos" data-dashboard-nav="videos"><span>▣</span> Video & Đăng MXH</a>
+        <a class="nav-link" href="#history" data-dashboard-nav="history"><span>↗</span> Lịch sử đăng</a>
+
+        <span class="nav-label">Hệ thống</span>
+        <a class="nav-link" href="#logs" data-dashboard-nav="logs"><span>≡</span> Log</a>
+        <span class="nav-label">Cấu hình</span>
+        {% for group in groups %}
+          {% set settings_page = 'settings-' ~ group.name|lower|replace(' ', '-') %}
+          <a class="nav-link nav-link-sub" href="#{{ settings_page }}" data-dashboard-nav="{{ settings_page }}">
+            <span>⚙</span> {{ group.name }}
+          </a>
+        {% endfor %}
+      </nav>
+      <div class="sidebar-footer">Chạy cục bộ trên máy này</div>
+    </aside>
+
+    <main class="app-main">
+      <header class="topbar">
+        <div>
+          <h1>Short Video Distributor</h1>
+          <p class="muted">Tạo, duyệt và sản xuất video trong một workspace.</p>
+        </div>
+      </header>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack">
+            {% for category, message in messages %}
+              <div class="flash {{ 'error' if category == 'error' else '' }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <section class="dashboard-page active" id="page-workflow" data-dashboard-page="workflow">
+        <div class="page-heading">
+          <h2>Workflow</h2>
+          <p class="muted">Thiết kế flow bằng cách kéo thả, nối node và chạy theo thứ tự.</p>
+        </div>
+        {% include "dashboard/workflow.html" %}
+        {% include "dashboard/ideas_prompt.html" %}
+      </section>
+
+      <section class="dashboard-page" id="page-runtime" data-dashboard-page="runtime" hidden>
+        <div class="page-heading">
+          <h2>Vận hành</h2>
+          <p class="muted">Trạng thái Google Flow và các tiến trình đang chạy.</p>
+        </div>
+        {% include "dashboard/runtime.html" %}
+      </section>
+
+      <section class="dashboard-page" id="page-content" data-dashboard-page="content" hidden>
+        <div class="page-heading">
+          <h2>Ý tưởng & duyệt</h2>
+          <p class="muted">Theo dõi bản nháp gửi Telegram và kịch bản đã duyệt chờ sản xuất.</p>
+        </div>
+        {% include "dashboard/ideas_queue.html" %}
+      </section>
+
+      <section class="dashboard-page" id="page-videos" data-dashboard-page="videos" hidden>
+        <div class="page-heading">
+          <h2>Video & Đăng đa nền tảng (TikTok · Facebook · YouTube)</h2>
+          <p class="muted">Import video từ máy tính hoặc chọn video có sẵn, viết Caption & Hashtag riêng cho từng nền tảng và đăng tự động.</p>
+        </div>
+        {% include "dashboard/videos.html" %}
+      </section>
+
+      <section class="dashboard-page" id="page-history" data-dashboard-page="history" hidden>
+        <div class="page-heading">
+          <h2>Lịch sử đăng</h2>
+          <p class="muted">Kết quả đăng bài theo từng nền tảng.</p>
+        </div>
+        {% include "dashboard/history.html" %}
+      </section>
+
+      <section class="dashboard-page" id="page-logs" data-dashboard-page="logs" hidden>
+        <div class="page-heading">
+          <h2>Log</h2>
+          <p class="muted">Xem trực tiếp và quản lý các file log được lưu bởi workflow.</p>
+        </div>
+        {% include "dashboard/logs.html" %}
+      </section>
+
+      {% include "dashboard/settings.html" %}
+    </main>
+  </div>
+</body>
+</html>

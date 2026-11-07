@@ -1,0 +1,73 @@
+    <section class="card custom-idea-form">
+      <div class="section-title">
+        <div>
+          <h2>Tạo ý tưởng & Chọn nhân vật Assets cố định</h2>
+          <p class="muted">Mặc định dùng 2 nhân vật đã tạo sẵn trong Assets Project Flow là <code>@khi</code> (<code>@Voice_Khi</code>) và <code>@nguoi</code> (<code>@Voice_Nguoi</code>). Sau này nếu thêm nhân vật mới trên Flow, bạn có thể đổi trực tiếp tại đây.</p>
+        </div>
+      </div>
+      <form id="custom-idea-form" action="{{ url_for('run_custom_ideas') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="custom-idea-controls" style="margin-bottom: 12px;">
+          <div>
+            <label for="char-1-tag">Nhân vật 1 (Thẻ Assets)</label>
+            <input id="char-1-tag" name="CHARACTER_1_TAG" type="text" value="{{ characters.CHARACTER_1_TAG }}" required placeholder="@khi">
+          </div>
+          <div>
+            <label for="char-1-voice">Giọng Nhân vật 1</label>
+            <input id="char-1-voice" name="CHARACTER_1_VOICE" type="text" value="{{ characters.CHARACTER_1_VOICE }}" required placeholder="@Voice_Khi">
+          </div>
+          <div>
+            <label for="char-2-tag">Nhân vật 2 (Thẻ Assets)</label>
+            <input id="char-2-tag" name="CHARACTER_2_TAG" type="text" value="{{ characters.CHARACTER_2_TAG }}" required placeholder="@nguoi">
+          </div>
+          <div>
+            <label for="char-2-voice">Giọng Nhân vật 2</label>
+            <input id="char-2-voice" name="CHARACTER_2_VOICE" type="text" value="{{ characters.CHARACTER_2_VOICE }}" required placeholder="@Voice_Nguoi">
+          </div>
+        </div>
+        <div class="custom-idea-controls">
+          <div class="custom-prompt-field">
+            <label for="custom-idea-prompt">Prompt / Chủ đề kịch bản Hài Đời Thường &amp; Bắt Trend Viral (3 Scene — Tự canh thời lượng theo câu thoại)</label>
+            <textarea id="custom-idea-prompt" name="prompt" rows="14" maxlength="12000" required
+                      placeholder="Nhập bất kỳ chủ đề nào (nói xấu sếp, thơ ca chế, chuyện đời sống, áp lực kiếm tiền, vợ chồng, trend viral, khởi nghiệp...)...">Tạo 10 kịch bản hài hước đời thường Việt Nam bắt trend và viral mạnh trên TikTok, Facebook Reels và YouTube Shorts. Nội dung hoàn toàn tự do, phong phú, không gò bó theo khuôn mẫu cơ khí sửa xe hay một lối mòn cũ, mà khai thác triệt để các góc nhìn dí dỏm, châm biếm duyên dáng của cuộc sống hàng ngày.
+
+🎯 6 NHÓM CHỦ ĐỀ ĐA DẠNG ĐƯỢC ƯU TIÊN SÁNG TẠO:
+1. Công sở & Áp lực kiếm tiền: Drama văn phòng, nói xấu sếp sau lưng thì bị bắt tại trận, KPI đè bẹp giấc mơ, tiền lương vừa về tài khoản thì tiền trọ tiền nợ cuốn trôi sạch, nghệ thuật xin sếp tăng lương bằng triết lý làm giàu.
+2. Khởi nghiệp & Ý tưởng làm giàu đi vào lòng đất: Bàn kế hoạch kinh doanh triệu USD nhưng vốn chỉ có 50 ngàn, sáng chế công nghệ nửa mùa, mở dịch vụ độc lạ vô dụng, tư vấn tài chính phong cách vỉa hè.
+3. Vợ chồng & "Nóc nhà" quyền lực: Khoe chiến tích giang hồ không ngán ai nhưng nghe tiếng vợ quát ngoài cửa là quỳ rạp, cuộc chiến giấu quỹ đen nghẹt thở, kỹ năng xin tiền vợ đi cà phê, phân chia việc nhà theo nguyên tắc bình đẳng một chiều.
+4. Xuất khẩu thành thơ & Ca dao chế vần điệu: Đấu khẩu bằng thơ 4 chữ hoặc lục bát gieo vần cực hiểm, khịa nhau chan chát bằng vần điệu hài hước kết hợp tiếng lóng hiện đại, câu trước đạo lý câu sau bẻ lái ngã ngửa.
+5. Hỏi xoáy đáp xoay & Triết lý đường phố: Chuyên gia tâm lý tự phong, thầy bói phong thủy phán toàn trật lất, giải mã giấc mơ số đề, hỏi một đằng trả lời một nẻo với gương mặt nghiêm túc tỉnh rụi.
+6. Cà khịa hàng xóm & Chuyện xóm trọ vỉa hè: Loa kẹo kéo hát bất tử thâu đêm, phân tranh ranh giới cây ăn quả, so kè độ giàu sang bằng đồ đi mượn, màn giải cứu tréo ngoe của đôi bạn thân.
+
+⚡ QUY TẮC PHÂN VAI & KHẨU HÌNH BẮT BUỘC (CHỐNG LỖI AI):
+- Đổi vai luân phiên nghiêm ngặt (Turn-taking): Scene 1 Nhân vật A nói -> Scene 2 Nhân vật B phản đòn/khịa -> Scene 3 Nhân vật A chốt hạ/bẻ lái (hoặc ngược lại). Tuyệt đối KHÔNG để một nhân vật nói liền 2 Scene liên tiếp!
+- Mỗi cảnh chỉ DUY NHẤT một nhân vật phát ngôn và nhép môi (Speaker: ... lip-syncing briskly), nhân vật còn lại hoàn toàn im lặng (Listener: stays completely silent, mouth closed) chỉ diễn nét mặt biểu cảm (kinh hãi, cười cợt, há hốc mồm, quỳ rạp...).
+- KHÔNG để nhân vật nói bị che mặt (như đeo kính râm đen, cúi gập mặt nhìn bài, lấy tay che miệng) vì AI Google Flow sẽ bị mất dấu khuôn mặt và tự động gán nhép miệng sang nhân vật bên cạnh! Nhân vật nói luôn là trọng tâm chính hướng mặt về phía trước.
+
+⏱️ QUY TẮC THỜI LƯỢNG & ĐỘ DÀI CÂU THOẠI (CHỐNG CẮT CỤT CUỐI CLIP):
+- Đặt "duration": "auto" cho toàn bộ các Scene, tuyệt đối KHÔNG gán số giây cứng (như 4s hay 6s) vào tiêu đề hay prompt.
+- Câu thoại mỗi Scene phải cực kỳ ngắn gọn, sắc bén, súc tích (tối đa 12–18 chữ tiếng Việt). Nhân vật cất tiếng nói ngay từ giây đầu tiên của clip và kết thúc hoàn toàn trước khi hết video kèm 1 giây đệm phản ứng nét mặt, đảm bảo 100% âm thanh được đọc trọn vẹn, không bị nuốt chữ hay ngắt cụt cuối video.
+
+💥 BẮT BUỘC CÓ CÚ BẺ LÁI (PLOT TWIST) BẤT NGỜ Ở SCENE 3:
+- Cảnh 3 luôn là đỉnh điểm gây cười (Punchline): Một cú lật kèo không ai ngờ, sự thật trần trụi bị vạch trần, tối kiến đi vào lòng đất làm bạn đứng hình, hoặc nhân vật bị nói xấu bất thình lình xuất hiện lù lù sau lưng khiến người nói phải "quay xe" chống chế trong quê độ.</textarea>
+          </div>
+          <div>
+            <label for="custom-scene-count">Số cảnh (1–20)</label>
+            <input id="custom-scene-count" name="scene_count" type="number" min="1" max="20" value="3" required>
+          </div>
+          <div>
+            <label for="custom-ideas-count">Số ý tưởng gửi duyệt (1–25)</label>
+            <input id="custom-ideas-count" name="ideas_count" type="number" min="1" max="25" value="10" required>
+          </div>
+          <div>
+            <label for="custom-duration-seconds">Thời lượng tổng (giây)</label>
+            <input id="custom-duration-seconds" name="duration_seconds" type="number" min="1" max="180" value="20" required>
+          </div>
+        </div>
+        <p class="muted custom-idea-note">Mỗi kịch bản sẽ giữ cố định 2 nhân vật trên và chỉ sinh các phân cảnh hành động + thoại lip-sync theo đúng cấu trúc Bước 2.</p>
+        <div class="actions">
+          <button id="generate-custom-ideas" type="submit">Tạo ý tưởng</button>
+          <span id="custom-idea-status" class="muted" role="status"></span>
+        </div>
+      </form>
+    </section>

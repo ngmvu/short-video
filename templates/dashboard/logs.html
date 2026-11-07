@@ -1,0 +1,24 @@
+    <section class="card">
+      <div class="section-title log-header">
+        <div>
+          <h2>Quản lý log</h2>
+          <p class="muted">Xem trực tiếp từ <code>storage\dashboard.log</code> và bản luân phiên (tự cập nhật mỗi 2,5 giây).</p>
+        </div>
+        <div class="log-toolbar">
+          <label class="checkbox-inline" for="log-autoscroll">
+            <input id="log-autoscroll" type="checkbox" checked>
+            <span>Tự cuộn xuống cuối</span>
+          </label>
+          <button id="refresh-logs" class="secondary tiny" type="button">Làm mới</button>
+          <form method="post" action="{{ url_for('clear_logs') }}"
+                onsubmit="return confirm('Xóa toàn bộ log workflow đã lưu?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button id="clear-logs-button" class="danger tiny" type="submit" {% if process.running %}disabled{% endif %}>
+              Xóa log đã lưu
+            </button>
+          </form>
+        </div>
+      </div>
+      <pre id="log-output" class="log-viewer" role="log" aria-live="polite" data-empty-text="Chưa có log nào được ghi.">{{ logs if logs else 'Chưa có log nào được ghi.' }}</pre>
+      <p id="log-running-hint" class="muted" {% if not process.running %}hidden{% endif %}>Dừng workflow trước khi xóa log.</p>
+    </section>

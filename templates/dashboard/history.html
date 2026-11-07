@@ -1,0 +1,56 @@
+    <section class="card">
+      <div class="section-title"><div><h2>Lịch sử đăng</h2><p class="muted">Kết quả đăng đa nền tảng YouTube Shorts, TikTok và Facebook Reels</p></div><span class="pill" id="history-count-pill">{{ reports|length }}</span></div>
+      {% if reports %}
+        <ol class="queue-list" id="publish-history-list">
+          {% for report in reports %}
+            <li class="history-report-item">
+              <div>
+                <strong>{{ report.get('title', 'Không có tiêu đề') }}</strong>
+                {% if report.get('video_name') %}
+                  <span class="pill tiny-pill muted">{{ report.get('video_name') }}</span>
+                {% endif %}
+                <small> · {{ report.get('published_at', '') }}</small>
+              </div>
+              <div class="actions">
+                {% for platform, label in [('tiktok','TikTok'), ('facebook','Facebook'), ('youtube','YouTube')] %}
+                  {% set result = report.get('statuses', {}).get(platform, {}) %}
+                  {% if result.get('skipped') %}
+                    <span class="pill muted">{{ label }}: Bỏ qua</span>
+                  {% else %}
+                    <span class="pill {{ 'ok' if result.get('success') else 'bad' }}">
+                      {{ label }}: {{ 'Đã gửi' if result.get('success') else 'Lỗi' }}
+                      {% if result.get('url') and result.get('url').startswith('https://') %}
+                        · <a href="{{ result.get('url') }}" target="_blank" rel="noopener noreferrer">Mở</a>
+                      {% elif result.get('error') %}
+                        · {{ result.get('error')[:140] }}
+                      {% elif result.get('message') %}
+                        · {{ result.get('message')[:100] }}
+                      {% endif %}
+                    </span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              {% if report.get('platform_configs') %}
+                <div class="history-platform-captions muted">
+                  {% for platform, label in [('tiktok','🎵 TikTok'), ('facebook','📘 Facebook'), ('youtube','▶️ YouTube')] %}
+                    {% set pcfg = report.get('platform_configs', {}).get(platform, {}) %}
+                    {% if pcfg.get('enabled') and (pcfg.get('caption') or pcfg.get('hashtags')) %}
+                      <div class="history-caption-line">
+                        <strong>{{ label }}:</strong>
+                        <span>{{ pcfg.get('caption', '')[:120] }}</span>
+                        {% if pcfg.get('hashtags') %}
+                          <code>{{ pcfg.get('hashtags') | join(' ') }}</code>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <ol class="queue-list" id="publish-history-list" hidden></ol>
+        <p class="muted" id="publish-history-empty">Chưa có báo cáo đăng bài.</p>
+      {% endif %}
+    </section>

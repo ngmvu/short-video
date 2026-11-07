@@ -1,0 +1,31 @@
+{% for group in groups %}
+  {% set settings_page = 'settings-' ~ group.name|lower|replace(' ', '-') %}
+  <section class="dashboard-page" id="page-{{ settings_page }}" data-dashboard-page="{{ settings_page }}" hidden>
+    <div class="page-heading">
+      <h2>Cấu hình {{ group.name }}</h2>
+      <p class="muted">{{ group.description }} · Lưu vào <code>.env</code>; secret không được hiển thị lại.</p>
+    </div>
+    <section class="card">
+      <form method="post" action="{{ url_for('save_config') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="settings_page" value="{{ settings_page }}">
+        <section class="field-group setting-group">
+          {% for field in group.fields %}
+            <label for="{{ field.key }}">{{ field.label }}</label>
+            {% if field.key == 'IDEA_STYLE' %}
+              <textarea id="{{ field.key }}" name="{{ field.key }}" rows="5"
+                        placeholder="Mô tả kiểu hài, bối cảnh, vai nhân vật muốn thử">{{ field.value }}</textarea>
+            {% else %}
+              <input id="{{ field.key }}" name="{{ field.key }}"
+                     type="{{ 'password' if field.secret else 'text' }}"
+                     value="{{ field.value }}"
+                     autocomplete="new-password"
+                     placeholder="{{ 'Đã lưu — để trống để giữ nguyên' if field.secret else '' }}">
+            {% endif %}
+          {% endfor %}
+        </section>
+        <div class="actions"><button type="submit">Lưu cấu hình {{ group.name }}</button></div>
+      </form>
+    </section>
+  </section>
+{% endfor %}

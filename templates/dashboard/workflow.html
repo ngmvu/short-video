@@ -1,0 +1,258 @@
+    <section class="card workflow-editor" aria-label="Trình thiết kế workflow">
+      <div class="workflow-toolbar">
+        <div>
+          <h2>Workflow editor</h2>
+          <p class="muted">Kéo node vào canvas, kéo node để sắp xếp và nối cổng ra với cổng vào.</p>
+        </div>
+        <div class="workflow-status">
+          <span id="process-status" class="pill {{ 'warn' if process.running else 'muted' }}">
+            {{ 'Đang chạy · --' ~ process.mode if process.running else 'Đã dừng' }}
+          </span>
+          <form method="post" action="{{ url_for('stop_process') }}" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button id="stop-process-button" class="danger tiny" type="submit">
+              {{ 'Dừng tiến trình' if process.running else 'Dừng / Dọn tiến trình ngầm' }}
+            </button>
+          </form>
+          <button id="open-flow-login" class="secondary tiny js-run-save-flow-auth" type="button" data-login-url="{{ url_for('start_flow_login') }}">
+            🔑 Chạy save_flow_auth.py (Đăng nhập Flow)
+          </button>
+          <button class="secondary tiny js-open-publish-studio" type="button">
+            🚀 Import &amp; Đăng đa nền tảng
+          </button>
+          <button id="run-workflow" class="tiny" type="button" {% if process.running %}disabled{% endif %}>▶ Chạy flow</button>
+          <button id="reset-workflow" class="secondary tiny" type="button">Khôi phục flow mẫu</button>
+        </div>
+      </div>
+      <div id="flow-auth-error-banner"
+           {% if not workflow.get('auth_error') and 'save_flow_auth.py' not in (logs or '') %}hidden{% endif %}
+           style="margin-bottom:14px; padding:12px 14px; border:1px solid rgba(239,68,68,0.55); border-radius:10px; background:rgba(127,29,29,0.28); display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px;">
+        <div>
+          <strong style="color:#fca5a5;">⛔ Lỗi xác thực Google Flow (Phiên đăng nhập hết hạn)</strong>
+          <div style="font-size:13px; color:#fecaca; margin-top:2px;">
+            Hệ thống đã tự động DỪNG tạo video và giữ nguyên toàn bộ kịch bản đã Approve trong hàng đợi. Hãy bấm nút bên phải để chạy <code>save_flow_auth.py</code> đăng nhập lại.
+          </div>
+        </div>
+        <button type="button" class="tiny js-run-save-flow-auth" data-login-url="{{ url_for('start_flow_login') }}">
+          🔑 Chạy save_flow_auth.py ngay
+        </button>
+      </div>
+      <div class="workflow-guide-banner" style="margin-bottom:14px; padding:14px 16px; border:1px solid rgba(59,130,246,0.35); border-radius:12px; background:rgba(15,23,42,0.65);">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+          <div>
+            <strong style="font-size:15px; color:#93c5fd;">📖 Hướng dẫn 3 Chế độ Chạy Flow Tự Động (Tạo ý tưởng ➔ Approve ➔ Tạo Video 3 Scene ➔ Tự Đăng TikTok / FB / YouTube)</strong>
+            <div class="muted" style="font-size:12.5px; margin-top:2px;">
+              Bấm chọn nhanh 1 trong 3 mẫu Flow dưới đây để tự động xếp Node lên bảng, sau đó bấm <strong>“▶ Chạy flow”</strong> ở góc phải phía trên:
+            </div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:10px;">
+          <div style="padding:10px 12px; border-radius:10px; background:rgba(30,41,59,0.75); border:1px solid rgba(56,189,248,0.3);">
+            <div style="font-weight:600; color:#38bdf8; margin-bottom:4px;">1️⃣ Có bước Duyệt ➔ Tự Tạo Video &amp; Tự Đăng MXH (Khuyên dùng)</div>
+            <p class="muted" style="font-size:12px; line-height:1.45; margin:0 0 8px 0;">
+              <strong>Luồng chạy:</strong> <code>✦ Tạo ý tưởng</code> ➔ <code>🚀 Duyệt → Video → Đăng MXH</code><br>
+              • Bước 1: Gemini tự sinh 3 kịch bản mới.<br>
+              • Bước 2: Bạn bấm <strong>Approve</strong> ngay trên Web (mục <em>Ý tưởng đã lưu</em> bên dưới) hoặc trên Telegram.<br>
+              • Bước 3: Hệ thống tự mở Google Flow tạo 3 video, ghép <code>Scene 1 → 2 → 3</code> và <strong>tự động đăng lên TikTok, Facebook Reels, YouTube Shorts</strong>!
+            </p>
+            <button type="button" class="tiny js-apply-flow-preset" data-preset="approve-publish">
+              ⚡ Nạp Flow: Duyệt ➔ Tạo Video ➔ Tự Đăng MXH
+            </button>
+          </div>
+
+          <div style="padding:10px 12px; border-radius:10px; background:rgba(30,41,59,0.75); border:1px solid rgba(34,197,94,0.3);">
+            <div style="font-weight:600; color:#4ade80; margin-bottom:4px;">2️⃣ Full Auto 100% (Không cần bấm Approve tay)</div>
+            <p class="muted" style="font-size:12px; line-height:1.45; margin:0 0 8px 0;">
+              <strong>Luồng chạy:</strong> <code>✦ Tạo ý tưởng</code> ➔ <code>▶ Sản xuất &amp; đăng</code><br>
+              • Bước 1: Gemini tự sinh 3 kịch bản mới.<br>
+              • Bước 2: Hệ thống <strong>tự động Approve luôn kịch bản mới nhất</strong> mà không cần chờ bạn bấm.<br>
+              • Bước 3: Tự mở Google Flow tạo 3 Scene, ghép thành 1 video và <strong>tự động đăng thẳng lên TikTok, Facebook Reels, YouTube Shorts</strong>!
+            </p>
+            <button type="button" class="secondary tiny js-apply-flow-preset" data-preset="full-auto-publish">
+              🤖 Nạp Flow: Full Auto 100% (Tự Duyệt &amp; Tự Đăng)
+            </button>
+          </div>
+
+          <div style="padding:10px 12px; border-radius:10px; background:rgba(30,41,59,0.75); border:1px solid rgba(148,163,184,0.25);">
+            <div style="font-weight:600; color:#e2e8f0; margin-bottom:4px;">3️⃣ Duyệt ➔ Tạo Video ➔ Chỉ Gửi Telegram (Xem trước khi đăng)</div>
+            <p class="muted" style="font-size:12px; line-height:1.45; margin:0 0 8px 0;">
+              <strong>Luồng chạy:</strong> <code>✦ Tạo ý tưởng</code> ➔ <code>✓ Duyệt → video → Telegram</code><br>
+              • Tạo ý tưởng ➔ Bạn bấm Approve (trên Web hoặc Telegram) ➔ Tạo &amp; ghép 3 Scene ➔ Gửi video về Telegram và lưu vào tab <strong>Video &amp; Đăng bài</strong> để bạn kiểm tra rồi bấm đăng sau.
+            </p>
+            <button type="button" class="secondary tiny js-apply-flow-preset" data-preset="approve-telegram">
+              📩 Nạp Flow: Duyệt ➔ Tạo Video ➔ Gửi Telegram
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-layout">
+        <aside class="node-palette">
+          <h3>Node</h3>
+          <button class="palette-node" type="button" draggable="true" data-node-type="generate-ideas">
+            <span class="node-icon">✦</span><span>Tạo ý tưởng</span>
+          </button>
+          <button class="palette-node" type="button" draggable="true" data-node-type="approval-publish">
+            <span class="node-icon">🚀</span><span>Duyệt → Video → Đăng MXH</span>
+          </button>
+          <button class="palette-node" type="button" draggable="true" data-node-type="approval-video">
+            <span class="node-icon">✓</span><span>Duyệt → video → Telegram</span>
+          </button>
+          <button class="palette-node" type="button" draggable="true" data-node-type="process-queue">
+            <span class="node-icon">▶</span><span>Sản xuất & đăng</span>
+          </button>
+          <button class="palette-node" type="button" draggable="true" data-node-type="telegram-listener">
+            <span class="node-icon">✉</span><span>Telegram</span>
+          </button>
+          <button class="palette-node" type="button" draggable="true" data-node-type="automation">
+            <span class="node-icon">⟳</span><span>Tự động hóa (Schedule)</span>
+          </button>
+          <p class="muted palette-help">Bấm chọn nhanh 1 trong 3 mẫu Flow ở trên hoặc kéo thả node vào canvas rồi bấm “▶ Chạy flow”.</p>
+        </aside>
+        <div class="canvas-wrap">
+          <div id="flow-stage" class="flow-stage"
+               data-run-url="{{ url_for('run_workflow_node', node_type='__node_type__') }}"
+               data-flow-url="{{ url_for('run_workflow') }}"
+               data-status-url="{{ url_for('status_api') }}"
+               data-logs-url="{{ url_for('logs_api') }}"
+               data-produce-queue-url="{{ url_for('produce_queue_telegram') }}"
+               data-clear-queue-url="{{ url_for('clear_queued_items') }}"
+               data-queue-delete-url="{{ url_for('delete_queued_item', item_id='__item_id__') }}"
+               data-resend-drafts-url="{{ url_for('resend_drafts_to_telegram') }}"
+               data-draft-approve-url="{{ url_for('approve_saved_draft', draft_id='__draft_id__') }}"
+               data-draft-delete-url="{{ url_for('delete_saved_draft', draft_id='__draft_id__') }}"
+               data-draft-telegram-url="{{ url_for('produce_saved_draft_telegram', draft_id='__draft_id__') }}"
+               data-draft-publish-url="{{ url_for('produce_saved_draft_publish', draft_id='__draft_id__') }}"
+               data-csrf-token="{{ csrf_token }}">
+            <svg id="connections" class="connections" aria-label="Kết nối workflow"></svg>
+            <div id="canvas-message" class="canvas-message" role="status">Nối node rồi bấm “Chạy flow”. Flow chạy tuần tự; “Duyệt → video → Telegram” chờ duyệt trên Telegram và gửi video sau khi tạo xong.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div class="section-title">
+          <div>
+            <h2>Ý tưởng đã lưu (Chưa lấy video / Dùng lại ngay)</h2>
+            <p class="muted">Các kịch bản đã lưu trong <code>storage\drafts.json</code> và <code>storage\queue_approved.json</code> — bấm để tạo video ngay mà không cần gọi Gemini tạo lại.</p>
+          </div>
+          <span id="workflow-drafts-pill" class="pill">{{ drafts|length }} bản nháp · {{ queue|length }} đã duyệt</span>
+        </div>
+        <div class="actions" style="margin-top:0; margin-bottom:14px;">
+          <button id="produce-queue-telegram-btn" class="tiny" type="button" {% if process.running or not queue %}disabled{% endif %}>
+            🎬 Tạo video từ hàng đợi đã duyệt (<span id="queue-count-badge">{{ queue|length }}</span>) → gửi Telegram
+          </button>
+          <button id="clear-queue-btn" class="danger tiny" type="button" {% if not queue %}disabled{% endif %}>
+            🗑 Xóa toàn bộ hàng đợi
+          </button>
+          <button id="resend-drafts-telegram-btn" class="secondary tiny" type="button" {% if process.running or not drafts %}disabled{% endif %}>
+            📨 Gửi lại {{ drafts|length }} ý tưởng đã lưu qua Telegram
+          </button>
+        </div>
+        <div id="saved-ideas-action-status" class="muted" style="margin-bottom:10px; font-size:13px;" role="status"></div>
+        {% if queue %}
+          <div id="workflow-approved-queue-box" style="margin-bottom:14px; padding:10px 12px; border:1px solid rgba(34,197,94,0.35); border-radius:10px; background:rgba(22,101,52,0.12);">
+            <div style="font-size:13px; font-weight:600; margin-bottom:8px;">📋 Hàng đợi đã duyệt chờ tạo video ({{ queue|length }})</div>
+            <ol class="queue-list" style="margin:0;">
+              {% for item in queue %}
+                <li class="queued-item-row" data-queue-id="{{ item.get('id', '') }}" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0;">
+                  <div>
+                    <strong>{{ item.get('idea', {}).get('title', 'Không có tiêu đề') }}</strong>
+                    <small class="muted"> · ID: <code>{{ item.get('id', '') }}</code></small>
+                  </div>
+                  <button type="button" class="danger tiny js-queue-delete" data-queue-id="{{ item.get('id', '') }}">
+                    🗑 Xóa khỏi hàng đợi
+                  </button>
+                </li>
+              {% endfor %}
+            </ol>
+          </div>
+        {% endif %}
+        <div id="workflow-saved-drafts-list">
+          {% if drafts %}
+            <ol class="queue-list saved-drafts-list">
+              {% for draft in drafts %}
+                {% set draft_state = draft.get('state', 'pending') %}
+                {% set state_label = '✅ Đã Approve' if draft_state == 'approved' else ('✓ Đã tạo video' if draft_state == 'processed' else ('❌ Đã bỏ qua' if draft_state == 'skipped' else '⏳ Chờ duyệt')) %}
+                {% set idea = draft.get('idea', {}) %}
+                <li class="saved-draft-item" data-draft-id="{{ draft.get('id', '') }}">
+                  <div class="saved-draft-info" style="flex: 1 1 340px;">
+                    <strong>{{ idea.get('title', 'Không có tiêu đề') }}</strong>
+                    <span class="pill tiny-pill {{ 'ok' if draft_state in ('approved', 'processed') else 'muted' }}">{{ state_label }}</span>
+                    <br>
+                    <small class="muted">ID: <code>{{ draft.get('id', '') }}</code> · {{ idea.get('scenes', [])|length }} cảnh · {{ idea.get('duration_seconds', 10) }}s</small>
+                    <details class="script-preview" style="margin-top:6px;">
+                      <summary style="cursor:pointer; font-size:12px; color:#60a5fa; user-select:none;">👁 Xem chi tiết kịch bản 5 phần ({{ idea.get('scenes', [])|length }} cảnh)</summary>
+                      <div style="margin-top:6px; padding:8px 10px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2); border-radius:8px; font-size:12px; line-height:1.5;">
+                        {% if idea.get('full_script_text') %}
+                          <pre style="white-space:pre-wrap; margin:0 0 8px 0; font-family:inherit; color:#e2e8f0;">{{ idea.get('full_script_text') }}</pre>
+                        {% else %}
+                          {% for scene in idea.get('scenes', []) %}
+                            <div style="margin-bottom:10px;">
+                              <strong>Scene {{ loop.index }}{% if scene.get('scene_title') %}: {{ scene.get('scene_title') }}{% endif %} ({{ scene.get('duration', '') }})</strong>
+                              {% if scene.get('first_frame') %}
+                                <div>Input / First Frame: <code>{{ scene.get('first_frame') }}</code></div>
+                              {% endif %}
+                              <div style="margin-top:2px;"><strong>Prompt:</strong></div>
+                              <div>{{ scene.get('prompt', '') }}</div>
+                            </div>
+                          {% endfor %}
+                        {% endif %}
+                        {% if idea.get('social_posts') %}
+                          <div style="margin-top:8px; padding-top:8px; border-top:1px dashed rgba(148,163,184,0.25);">
+                            <strong>✨ Caption &amp; Hashtag Đa Nền Tảng (Gemini AI đã tạo):</strong>
+                            {% for pkey, plabel in [('tiktok','🎵 TikTok'), ('facebook','📘 Facebook'), ('youtube','▶️ YouTube')] %}
+                              {% set sp = idea.get('social_posts', {}).get(pkey, {}) %}
+                              {% if sp %}
+                                <div style="margin-top:4px;">
+                                  <strong>{{ plabel }}:</strong> {{ sp.get('caption', '') }} <code>{{ sp.get('hashtags', '') }}</code>
+                                </div>
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+                        {% endif %}
+                      </div>
+                    </details>
+                  </div>
+                  <div class="saved-draft-actions">
+                    <button type="button" class="tiny js-draft-produce-telegram" data-draft-id="{{ draft.get('id', '') }}" {% if process.running %}disabled{% endif %}>
+                      ✓ Tạo video → Telegram
+                    </button>
+                    <button type="button" class="secondary tiny js-draft-produce-publish" data-draft-id="{{ draft.get('id', '') }}" {% if process.running %}disabled{% endif %}>
+                      ▶ Tạo & Đăng
+                    </button>
+                    <button type="button" class="secondary tiny js-draft-approve-only" data-draft-id="{{ draft.get('id', '') }}">
+                      {{ '✅ Đã Approve' if draft_state == 'approved' else '+ Duyệt vào hàng đợi' }}
+                    </button>
+                    <button type="button" class="danger tiny js-draft-delete" data-draft-id="{{ draft.get('id', '') }}">
+                      🗑 Xóa
+                    </button>
+                  </div>
+                </li>
+              {% endfor %}
+            </ol>
+          {% else %}
+            <p class="muted">Chưa có ý tưởng nào được lưu.</p>
+          {% endif %}
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="section-title log-header">
+          <div>
+            <h2>Xem trực tiếp Log Workflow</h2>
+            <p class="muted">Tự động cập nhật trực tiếp từ <code>storage\dashboard.log</code> mỗi 2,5 giây.</p>
+          </div>
+          <div class="log-toolbar">
+            <label class="checkbox-inline" for="workflow-log-autoscroll">
+              <input id="workflow-log-autoscroll" type="checkbox" checked>
+              <span>Tự cuộn</span>
+            </label>
+            <button id="workflow-refresh-logs" class="secondary tiny" type="button">Làm mới</button>
+          </div>
+        </div>
+        <pre id="workflow-log-output" class="log-viewer" style="min-height:280px; max-height:420px;" role="log" aria-live="polite" data-empty-text="Chưa có log nào được ghi.">{{ logs if logs else 'Chưa có log nào được ghi.' }}</pre>
+      </article>
+    </section>

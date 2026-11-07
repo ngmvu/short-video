@@ -1,0 +1,329 @@
+    {% set first_video = videos[0] if videos else none %}
+    {% set init_posts = (first_video.social_posts if first_video and first_video.social_posts else {}) %}
+    <section class="card" id="multiplatform-studio-card">
+      <div class="section-title">
+        <div>
+          <h2>🚀 Đăng Video Đa Nền Tảng (TikTok · Facebook Reels · YouTube Shorts)</h2>
+          <p class="muted">Khi bạn chọn/import video lên, hệ thống sẽ <strong>tự động gọi Gemini API</strong> để viết Caption &amp; Hashtag riêng cho từng nền tảng (hoặc tự động lấy từ kịch bản đã chạy trong Workflow).</p>
+        </div>
+        <span class="pill">TikTok · Facebook · YouTube · Gemini AI</span>
+      </div>
+
+      <form
+        id="multiplatform-publish-form"
+        action="{{ url_for('publish_video_multiplatform_api') }}"
+        method="post"
+        enctype="multipart/form-data"
+        data-import-url="{{ url_for('import_video_api') }}"
+        data-generate-captions-url="{{ url_for('generate_video_captions_api') }}"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="publish-source-grid">
+          <div class="field-group">
+            <h3>1. Chọn hoặc Import Video (Tự động tạo Caption &amp; Hashtag bằng Gemini)</h3>
+            <p class="muted">Chọn file video từ máy tính: hệ thống sẽ tự động tải lên và gọi Gemini AI phân tích viết ngay Caption &amp; Hashtag riêng cho cả 3 nền tảng.</p>
+
+            <label for="publish-video-file">📂 Chọn file video từ máy tính (.mp4, .mov, .webm) — Tự động gọi Gemini AI</label>
+            <div class="import-file-row">
+              <input
+                type="file"
+                id="publish-video-file"
+                name="video_file"
+                accept="video/mp4,video/quicktime,video/webm,video/x-matroska,.mp4,.mov,.webm,.mkv,.m4v"
+              >
+              <button type="button" id="import-video-only-btn" class="secondary tiny">
+                📥 Import &amp; Tạo Caption AI
+              </button>
+            </div>
+
+            <label for="publish-local-path">💻 Hoặc nhập đường dẫn file trên máy (tuỳ chọn)</label>
+            <input
+              type="text"
+              id="publish-local-path"
+              name="local_path"
+              placeholder="VD: D:\Videos\tiktok_clip.mp4"
+            >
+
+            <label for="publish-video-select">🎞️ Hoặc chọn video đã tạo trong <code>storage\downloads</code></label>
+            <select id="publish-video-select" name="video_name">
+              <option value="">-- Chọn video trong storage\downloads --</option>
+              {% for video in videos %}
+                <option
+                  value="{{ video.name }}"
+                  data-video-url="{{ url_for('serve_video', filename=video.name) }}"
+                  data-video-title="{{ video.title }}"
+                  data-social-posts="{{ (video.social_posts or {}) | tojson | forceescape }}"
+                  {% if loop.first %}selected{% endif %}
+                >
+                  {{ video.name }} ({{ video.size_mb }} MB · {{ video.modified }}){% if video.social_posts %} ✨ Có sẵn Caption AI{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+
+            <label for="publish-general-title">🏷️ Tiêu đề / Chủ đề chính của video</label>
+            <input
+              type="text"
+              id="publish-general-title"
+              name="general_title"
+              maxlength="120"
+              value="{{ first_video.title if first_video else '' }}"
+              placeholder="VD: Thắng Kêu Tra Dầu Ăn"
+            >
+
+            <label for="publish-ai-hint">✨ Gợi ý thêm cho Gemini AI khi viết Caption &amp; Hashtag (tuỳ chọn)</label>
+            <div class="import-file-row">
+              <input
+                type="text"
+                id="publish-ai-hint"
+                name="hint_text"
+                placeholder="VD: Khách tự tra dầu ăn vào thắng đĩa bị tuột thắng, giọng hài hước châm biếm..."
+              >
+              <button type="button" id="generate-gemini-captions-btn" class="tiny">
+                ✨ Tạo Caption &amp; Hashtag bằng Gemini AI
+              </button>
+            </div>
+
+            {% if drafts %}
+              <label for="publish-draft-autofill">📋 Hoặc lấy Caption &amp; Hashtag đã lưu từ kịch bản Workflow</label>
+              <div class="import-file-row">
+                <select id="publish-draft-autofill">
+                  <option value="">-- Chọn kịch bản đã tạo để lấy bộ Caption &amp; Hashtag riêng --</option>
+                  {% for d in drafts %}
+                    {% set idea = d.get('idea', {}) %}
+                    <option
+                      value="{{ d.get('id', '') }}"
+                      data-title="{{ idea.get('title', '') }}"
+                      data-description="{{ idea.get('description', '') }}"
+                      data-tags="{{ (idea.get('tags', []) | join(' #')) }}"
+                      data-social-posts="{{ (idea.get('social_posts') or {}) | tojson | forceescape }}"
+                    >
+                      {{ idea.get('title', 'Không tiêu đề') }} ({{ d.get('id', '')[:8] }})
+                    </option>
+                  {% endfor %}
+                </select>
+                <button type="button" id="apply-draft-autofill-btn" class="secondary tiny">
+                  Điền vào 3 nền tảng
+                </button>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="field-group publish-preview-box">
+            <h3>Xem trước Video</h3>
+            <p class="muted" id="publish-preview-label">
+              {% if first_video %}
+                Đang chọn: <code>{{ first_video.name }}</code>
+              {% else %}
+                Chưa chọn video. Hãy import hoặc chọn file từ danh sách.
+              {% endif %}
+            </p>
+            <video
+              id="publish-video-preview"
+              controls
+              preload="metadata"
+              {% if first_video %}src="{{ url_for('serve_video', filename=first_video.name) }}"{% endif %}
+            ></video>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top: 18px; margin-bottom: 10px;">
+          <div>
+            <h3>2. Caption &amp; Hashtag riêng cho từng nền tảng (Do Gemini AI tạo hoặc tự chỉnh sửa)</h3>
+            <p class="muted">Tích chọn nền tảng muốn đăng và kiểm tra/chỉnh sửa nội dung riêng biệt cho TikTok, Facebook Reels và YouTube Shorts.</p>
+          </div>
+          <div class="actions" style="margin: 0;">
+            <button type="button" id="copy-tiktok-to-all-btn" class="secondary tiny" title="Sao chép Caption và Hashtag từ TikTok sang Facebook và YouTube">
+              📋 Sao chép nội dung từ TikTok sang FB &amp; YouTube
+            </button>
+          </div>
+        </div>
+
+        <div class="platform-publish-grid">
+          <!-- TikTok -->
+          <div class="field-group platform-card" data-platform-card="tiktok">
+            <div class="card-head">
+              <label class="checkbox-inline platform-toggle">
+                <input type="checkbox" id="tiktok-enabled" name="tiktok_enabled" value="1" checked>
+                <strong>🎵 TikTok</strong>
+              </label>
+              <span class="pill tiny-pill">TikTok Video</span>
+            </div>
+            <p class="muted">Đăng video lên TikTok với caption và bộ hashtag xu hướng riêng.</p>
+
+            <label for="tiktok-title">Tiêu đề / Hook TikTok (tối đa 150 ký tự)</label>
+            <input
+              type="text"
+              id="tiktok-title"
+              name="tiktok_title"
+              maxlength="150"
+              value="{{ init_posts.get('tiktok', {}).get('title', '') }}"
+              placeholder="VD: Khách bảo thắng kêu nên tự tra dầu ăn và cái kết..."
+            >
+
+            <label for="tiktok-caption">Caption riêng cho TikTok</label>
+            <textarea
+              id="tiktok-caption"
+              name="tiktok_caption"
+              rows="4"
+              maxlength="2200"
+              placeholder="Viết caption thu hút bình luận trên TikTok..."
+            >{{ init_posts.get('tiktok', {}).get('caption', '') }}</textarea>
+
+            <label for="tiktok-hashtags">Hashtag riêng cho TikTok</label>
+            <input
+              type="text"
+              id="tiktok-hashtags"
+              name="tiktok_hashtags"
+              value="{{ init_posts.get('tiktok', {}).get('hashtags', '') }}"
+              placeholder="#xuhuong #tiktokvn #haihuoc #suaxe #fyp"
+            >
+          </div>
+
+          <!-- Facebook Reels -->
+          <div class="field-group platform-card" data-platform-card="facebook">
+            <div class="card-head">
+              <label class="checkbox-inline platform-toggle">
+                <input type="checkbox" id="facebook-enabled" name="facebook_enabled" value="1" checked>
+                <strong>📘 Facebook Reels</strong>
+              </label>
+              <span class="pill tiny-pill">Facebook Page</span>
+            </div>
+            <p class="muted">Đăng Reels lên Fanpage Facebook với mô tả và hashtag riêng.</p>
+
+            <label for="facebook-title">Tiêu đề mở đầu Facebook Reels (tuỳ chọn)</label>
+            <input
+              type="text"
+              id="facebook-title"
+              name="facebook_title"
+              maxlength="150"
+              value="{{ init_posts.get('facebook', {}).get('title', '') }}"
+              placeholder="VD: Pha sửa xe đi vào lòng đất tại tiệm..."
+            >
+
+            <label for="facebook-caption">Caption riêng cho Facebook Reels</label>
+            <textarea
+              id="facebook-caption"
+              name="facebook_caption"
+              rows="4"
+              placeholder="Viết nội dung bài đăng Facebook Reels cho Fanpage..."
+            >{{ init_posts.get('facebook', {}).get('caption', '') }}</textarea>
+
+            <label for="facebook-hashtags">Hashtag riêng cho Facebook Reels</label>
+            <input
+              type="text"
+              id="facebook-hashtags"
+              name="facebook_hashtags"
+              value="{{ init_posts.get('facebook', {}).get('hashtags', '') }}"
+              placeholder="#reelsvn #facebookreels #haihuoc #suaxe"
+            >
+          </div>
+
+          <!-- YouTube Shorts -->
+          <div class="field-group platform-card" data-platform-card="youtube">
+            <div class="card-head">
+              <label class="checkbox-inline platform-toggle">
+                <input type="checkbox" id="youtube-enabled" name="youtube_enabled" value="1" checked>
+                <strong>▶️ YouTube Shorts</strong>
+              </label>
+              <span class="pill tiny-pill">Tiêu đề kèm #Shorts #dunglakhi #trending</span>
+            </div>
+            <p class="muted">YouTube Shorts nhận hashtag trực tiếp trên Tiêu đề: bộ Hashtag/Tags sẽ tự động đi cùng với Tiêu đề (tối đa 100 ký tự).</p>
+
+            <label for="youtube-title">Tiêu đề YouTube Shorts (tối đa 100 ký tự — đi kèm #Shorts #dunglakhi #trending...)</label>
+            <input
+              type="text"
+              id="youtube-title"
+              name="youtube_title"
+              maxlength="100"
+              value="{{ init_posts.get('youtube', {}).get('title', '') }}"
+              placeholder="VD: Ăn Phở Bò Bỏ Hành #Shorts #dunglakhi #trending"
+            >
+
+            <label for="youtube-caption">Mô tả (Description) riêng cho YouTube Shorts</label>
+            <textarea
+              id="youtube-caption"
+              name="youtube_caption"
+              rows="4"
+              placeholder="Viết mô tả chi tiết cho video YouTube Shorts..."
+            >{{ init_posts.get('youtube', {}).get('caption', '') }}</textarea>
+
+            <label for="youtube-hashtags">Hashtag / Tags riêng cho YouTube Shorts (tự động gắn vào Tiêu đề YouTube Shorts)</label>
+            <input
+              type="text"
+              id="youtube-hashtags"
+              name="youtube_hashtags"
+              value="{{ init_posts.get('youtube', {}).get('hashtags', '') }}"
+              placeholder="#Shorts #dunglakhi #chuyendoithuong #trending"
+            >
+
+            <div class="youtube-audience-box" style="margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <label style="display: block; margin-bottom: 6px; font-weight: 600;">👶 Đối tượng người xem (Audience — Made for kids)</label>
+              <label class="checkbox-inline" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; cursor: pointer;">
+                <input type="radio" id="youtube-made-for-kids-yes" name="youtube_made_for_kids" value="1" checked>
+                <span><strong>Yes, it's made for kids</strong> (Có, nội dung này dành cho trẻ em)</span>
+              </label>
+              <label class="checkbox-inline" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer;">
+                <input type="radio" id="youtube-made-for-kids-no" name="youtube_made_for_kids" value="0">
+                <span><strong>No, it's not made for kids</strong> (Không, nội dung này không dành cho trẻ em)</span>
+              </label>
+              <p class="muted" style="font-size: 12px; line-height: 1.45; margin: 0;">
+                Features like personalized ads and notifications won’t be available on videos made for kids. Videos that are set as made for kids by you are more likely to be recommended alongside other kids’ videos.
+                <a href="https://support.google.com/youtube/answer/9527654?hl=en" target="_blank" rel="noopener noreferrer">Learn more</a>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="publish-submit-bar">
+          <label class="checkbox-inline">
+            <input type="checkbox" id="notify-telegram" name="notify_telegram" value="1">
+            <span>Gửi báo cáo kết quả kèm video về Telegram sau khi đăng</span>
+          </label>
+          <div class="actions" style="margin: 0;">
+            <button type="submit" id="publish-multiplatform-submit">
+              🚀 Đăng Video Lên Các Nền Tảng Đã Chọn
+            </button>
+          </div>
+        </div>
+
+        <div id="publish-multiplatform-status" class="publish-status-box" hidden></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <div>
+          <h2>Thư viện Video đã tải / đã Import</h2>
+          <p class="muted">MP4 trong <code>storage\downloads</code> (tối đa 50 video mới nhất). Bấm <strong>"🚀 Chọn đăng"</strong> để đưa video kèm Caption &amp; Hashtag AI lên khung đăng đa nền tảng phía trên.</p>
+        </div>
+        <span class="pill" id="video-library-count-pill">{{ videos|length }} video</span>
+      </div>
+      {% if videos %}
+        <div class="video-grid" id="video-library-grid">
+          {% for video in videos %}
+            <article class="video-card" data-video-card="{{ video.name }}">
+              <video controls preload="metadata" src="{{ url_for('serve_video', filename=video.name) }}"></video>
+              <h3>{{ video.title }}</h3>
+              <p class="video-meta muted">{{ video.size_mb }} MB · {{ video.modified }}</p>
+              <div class="actions">
+                <button
+                  type="button"
+                  class="tiny js-select-video-for-publish"
+                  data-video-name="{{ video.name }}"
+                  data-video-title="{{ video.title }}"
+                  data-video-url="{{ url_for('serve_video', filename=video.name) }}"
+                  data-social-posts="{{ (video.social_posts or {}) | tojson | forceescape }}"
+                >
+                  🚀 Chọn đăng
+                </button>
+                <a class="button secondary tiny" href="{{ url_for('serve_video', filename=video.name) }}" download>Tải xuống</a>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="video-grid" id="video-library-grid" hidden></div>
+        <p class="muted" id="video-library-empty">Chưa có video MP4 trong thư mục downloads.</p>
+      {% endif %}
+    </section>
